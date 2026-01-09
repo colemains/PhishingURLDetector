@@ -1,17 +1,15 @@
 import gradio as gr
-from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.prompts import PromptTemplate
+from huggingface_hub import InferenceClient
 import os
 
-# Use HF_TOKEN environment variable (set by HF Spaces automatically)
-# For local testing, ensure HF_TOKEN is set in your environment
+# Use HF_TOKEN environment variable
 hf_token = os.getenv("HF_TOKEN")
 
-llm = HuggingFaceEndpoint(
-    repo_id="mistralai/Mistral-7B-Instruct-v0.1",
-    task="text-generation",
-    huggingfacehub_api_token=hf_token,
-    max_new_tokens=400
+# Initialize the Inference Client directly (avoids langchain_huggingface StopIteration bug)
+client = InferenceClient(
+    model="mistralai/Mistral-7B-Instruct-v0.1",
+    token=hf_token
 )
 
 template = """You are a professional LinkedIn branding expert for a cybersecurity-to-AI transitioning analyst.
@@ -33,8 +31,18 @@ def generate_post(custom_input=None):
         except:
             achievements = "No achievements logged yet."
     
-    chain = prompt | llm
-    return chain.invoke({"achievements": achievements})
+    # Format the prompt
+    formatted_prompt = prompt.format(achievements=achievements)
+    
+    # Call the Inference API directly
+    try:
+        response = client.text_generation(formatted_prompt, max_new_tokens=400)
+        return response if response else "No response generated. Please try again."
+    except Exception as e:
+        error_msg = str(e)
+        if "connection" in error_msg.lower() or "timeout" in error_msg.lower():
+            return "Connection error. Please check your HF_TOKEN is set and try again."
+        return f"Error: {error_msg}"
 
 iface = gr.Interface(
     fn=generate_post,
@@ -43,4 +51,6 @@ iface = gr.Interface(
     title="LinkedIn Branding AI Agent",
     description="Generates polished posts from your logged achievements. Run weekly for consistent branding!"
 )
-iface.launch()
+
+if __name__ == "__main__":
+    iface.launch()
