@@ -40,9 +40,8 @@ def generate_post(custom_input=None):
         return response if response else "No response generated. Please try again."
     except Exception as e:
         error_msg = str(e)
-        if "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-            return "Connection error. Please check your HF_TOKEN is set and try again."
-        return f"Error: {error_msg}"
+        # Return detailed error for debugging
+        return f"Error: {error_msg}\n\nDebug: Check that HF_TOKEN is set in Space secrets with inference permissions."
 
 iface = gr.Interface(
     fn=generate_post,
