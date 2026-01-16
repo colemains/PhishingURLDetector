@@ -10,22 +10,21 @@ except FileNotFoundError:
     raise FileNotFoundError("Model file 'url_model.pkl' not found. Please ensure it's in the repository.")
 
 def extract_features(url):
-    # Add scheme if missing for proper parsing
+    # IMPORTANT: Match train.py exactly - do NOT prepend scheme
+    # The model was trained on raw URLs without scheme modification
     if not url or not isinstance(url, str):
         url = ""
-    if not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
     
     features = {}
     features['length'] = len(url)
     features['dots'] = url.count('.')
     features['https'] = 1 if url.startswith('https') else 0
     
-    # Safe URL parsing with error handling
+    # Match train.py: use urlparse directly without prepending scheme
+    # This ensures feature values match training data exactly
     try:
         parsed = urlparse(url)
-        netloc = parsed.netloc if parsed.netloc else ""
-        features['ip'] = 1 if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', netloc) else 0
+        features['ip'] = 1 if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', parsed.netloc) else 0
     except Exception:
         features['ip'] = 0
     
