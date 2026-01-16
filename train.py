@@ -6,26 +6,19 @@ import joblib
 import re
 from urllib.parse import urlparse
 
-df = pd.read_csv('phishing_site_urls.csv')
+df = pd.read_csv('phishing_urls.csv')
 def extract_features(url):
-    # Add scheme if missing for proper parsing
-    if not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
     features = {}
     features['length'] = len(url)
     features['dots'] = url.count('.')
     features['https'] = 1 if url.startswith('https') else 0
-    try:
-        parsed = urlparse(url)
-        features['ip'] = 1 if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', parsed.netloc) else 0
-    except:
-        features['ip'] = 0
+    features['ip'] = 1 if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', urlparse(url).netloc) else 0
     features['at'] = 1 if '@' in url else 0
     features['hyphens'] = url.count('-')
     return list(features.values())
 
-X = df['URL'].apply(extract_features).tolist()
-y = df['Label'].map({'bad':1, 'good':0})
+X = df['url'].apply(extract_features).tolist()
+y = df['label'].map({'phishing':1, 'legitimate':0})
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 model = RandomForestClassifier(n_estimators=100)
